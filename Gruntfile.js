@@ -1,9 +1,18 @@
 module.exports = function(grunt) {
   require('time-grunt')(grunt);
-
+ 
   var srcImgPath = 'src_imgs/',
       destImgPath = 'dest_imgs/',
       changedCachePath = 'node_modules/grunt-changed/.cache';
+      staleFiles = require('./stale-files.js');
+
+  console.log(
+    staleFiles.getStaleFileList(
+      srcImgPath,
+      destImgPath,
+      ['mobile', 'tablet']
+    )
+  );
 
   grunt.initConfig({
     pkg: grunt.file.readJSON('package.json'),
@@ -15,6 +24,13 @@ module.exports = function(grunt) {
     clean: {
       build: {
         src: [changedCachePath, destImgPath],
+      },
+      dest: {
+        src: staleFiles.getStaleFileList(
+          srcImgPath,
+          destImgPath,
+          ['mobile', 'tablet']
+        )
       }
     },
     copy: {
@@ -23,7 +39,7 @@ module.exports = function(grunt) {
           {
             expand: true,
             cwd: srcImgPath,
-            src: ['**'],
+            src: ['*', '**/*'], // fix for bug with '**'
             dest: destImgPath
           },
         ]
@@ -39,7 +55,7 @@ module.exports = function(grunt) {
         files: [{
           expand: true,
           cwd: destImgPath,
-          src: ['**/*.{png,jpg,gif}'],
+          src: ['**/*.{png,jpg,jpeg,gif}'],
           dest: destImgPath
         }]
       },
@@ -49,10 +65,10 @@ module.exports = function(grunt) {
         options: {
           sizes: [{
             name: 'mobile',
-            width: ‘50%’
+            width: '50%'
           }, {
             name: 'tablet',
-            width: ‘65%’
+            width: '65%'
           }
           ],
           newFilesOnly: false
@@ -60,7 +76,7 @@ module.exports = function(grunt) {
         files: [{
           expand: true,
           cwd: srcImgPath,
-          src: ['**/*.{gif,jpg,png}'],
+          src: ['**/*.{gif,jpg,jpeg,png}'],
           dest: destImgPath
         }]
       }
@@ -73,6 +89,7 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-imagemin');
   grunt.loadNpmTasks('grunt-responsive-images');
   
-  grunt.registerTask('default', ['changed:copy', 'changed:responsive_images', 'changed:imagemin']);
-  grunt.registerTask('force-process-images', ['clean', 'default']);
+  grunt.registerTask('default', ['clean:dest', 'copy', 'responsive_images', 'imagemin']);
+  grunt.registerTask('force-process-images', ['clean:build', 'default']);
+  
 };
